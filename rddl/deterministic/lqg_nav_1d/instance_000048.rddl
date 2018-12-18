@@ -1,0 +1,70 @@
+domain lqg_nav_1d {
+
+    requirements = { continuous, reward-deterministic };
+
+    types {
+
+    };
+
+    pvariables {
+	x : {state-fluent, real, default = 0.0};
+	t : {state-fluent, real, default = 0.0};
+	v : {state-fluent, real, default = 0.0};
+	u : {action-fluent, real, default = 0.0};
+	dt : {non-fluent, real, default = 0.0};
+	gx : {non-fluent, real, default = 0.0};
+	mu_w : {non-fluent, real, default = 0.0};
+	sigma_w : {non-fluent, real, default = 0.0};
+	H : {non-fluent, real, default = 0.0};
+    };
+
+    cpfs {
+	t' = (t + 1.0);
+	v' = ((v + (dt * u)) + Normal(mu_w,sigma_w));
+	x' = (x + (dt * v));
+    };
+
+    reward = (-1.0 * (((x - gx) * (x - gx)) + if ((t < H)) then (((u * u) * 0.01)) else (0.0)));
+
+    action-preconditions {
+	(u >= -1.0);
+	(u <= 1.0);
+    };
+
+    state-invariants {
+	(v >= -5.0);
+	(v <= 5.0);
+	(x >= -100.0);
+	(x <= 100.0);
+    };
+
+}
+
+non-fluents instance_000048_non_fluents {
+    domain = lqg_nav_1d;
+
+    non-fluents {
+	sigma_w = 0.05;
+	mu_w = 0.0;
+	H = 100.0;
+	gx = -14.2;
+	dt = 0.5;
+    };
+}
+
+instance instance_000048 {
+
+    domain = lqg_nav_1d;
+    non-fluents = instance_000048_non_fluents;
+
+    init-state {
+	x = 38.04719702150005;
+	v = -0.21713526874487937;
+	u = 0.0;
+	t = 0.0;
+    };
+
+    max-nondef-actions = pos-inf;
+    horizon = 100;
+    discount = 1.0;
+}

@@ -1,0 +1,95 @@
+domain CarParking-Tarski {
+
+    requirements = {
+        //concurrent,
+        continuous,
+        cpf-deterministic,
+        intermediate-nodes,
+        reward-deterministic
+    };
+
+    types {
+
+    };
+
+    pvariables {
+        h: { non-fluent, real, default = 0.03 }; // h-step Euler dynamics
+        d: { non-fluent, real, default = 2.00 }; // distance between the front and back axles
+
+        px: { non-fluent, real, default = 0.01 }; // p-sized neighboorhood in x dimension
+        py: { non-fluent, real, default = 0.01 }; // p-sized neighboorhood in y dimension
+        pt: { non-fluent, real, default = 0.01 }; // p-sized neighboorhood in theta dimension
+        pv: { non-fluent, real, default = 1.00 }; // p-sized neighboorhood in velocity dimension
+
+        co: { non-fluent, real, default = 0.01};   // omega cost coefficent
+        ca: { non-fluent, real, default = -1.2817}; // acceleration cost coefficent
+
+        step:  { state-fluent, real, default = 0.0 }; // timestep
+        
+        x:     { state-fluent, real, default = 0.0 }; // x-position of the point midway between the back wheels
+        y:     { state-fluent, real, default = 0.0 }; // y-position of the point midway between the back wheels
+        theta: { state-fluent, real, default = 0.0 }; // angle of the car relative to the x-axis
+        v:     { state-fluent, real, default = 0.0 }; // velocity of the front wheels
+
+        omega: { action-fluent, real, default = 0.0 }; // steering wheel angle w.r.t. the current car direction
+        a:     { action-fluent, real, default = 0.0 }; // front wheel acceleration
+    };
+
+    cpfs {
+        x' = x + ((cos[theta] - sin[ 0.6 * 1.6 * (sin[omega]/d) ] * (sin[theta])) * v);
+        y' = y + ((sin[theta] - sin[ 0.6 * 1.6 * (sin[omega]/d) ] * (cos[theta])) * v);
+        
+        theta' = theta + sin[ 1.6 * (v/d) * sin[omega] ]; 
+        v' = v + a;
+
+        step' = step + 1.0;
+    };  
+
+    action-preconditions {
+        abs[omega] <= 0.5;
+        abs[omega] >= -0.5;
+        abs[a] <= 2.0;
+        abs[a] >= -2.0;
+    };    
+
+    reward =
+        if (step' < 500) then
+            // Control cost
+            (co * pow[omega, 2]) + (ca * pow[a, 2]) +
+            // State cost
+            0.001 * (sqrt[ pow[x, 2] + pow[0.1, 2] ] - 0.1 +
+                     sqrt[ pow[y, 2] + pow[0.1, 2] ] - 0.1)
+            else
+                // Terminal cost
+                0.1 *
+                (sqrt[ pow[x, 2] + pow[px, 2] ] - px +
+                sqrt[ pow[y, 2] + pow[py, 2] ] - py) +
+                (sqrt[ pow[theta, 2] + pow[pt, 2] ] - pt) * 0.3 +
+                (sqrt[ pow[v, 2] + pow[pv, 2] ] - pv)
+    ;
+}
+
+non-fluents CarParking-nf-Tarski {
+
+    domain = CarParking-Tarski;
+
+    non-fluents {
+        h = 0.03;
+    };
+}
+
+instance inst1 {
+    domain = CarParking-Tarski;
+    non-fluents = CarParking-nf-Tarski;
+
+    init-state  {
+        x = 1.0;
+        y = 1.0;
+        theta = 4.712; // 3 * pi / 2
+        v = 0.0;
+    };
+
+    max-nondef-actions = pos-inf;
+    horizon = 500;
+    discount = 1.0;
+}
