@@ -1,0 +1,97 @@
+domain lqr_nav_2d_multi_unit {
+
+    requirements = { continuous, reward-deterministic };
+
+    types {
+		vehicle : object;
+    };
+
+    pvariables {
+	x(vehicle) : {state-fluent, real, default = 0.0};
+	y(vehicle) : {state-fluent, real, default = 0.0};
+	t : {state-fluent, real, default = 0.0};
+	vx(vehicle) : {state-fluent, real, default = 0.0};
+	vy(vehicle) : {state-fluent, real, default = 0.0};
+	ux(vehicle) : {action-fluent, real, default = 0.0};
+	uy(vehicle) : {action-fluent, real, default = 0.0};
+	dt : {non-fluent, real, default = 0.0};
+	gx : {non-fluent, real, default = 0.0};
+	gy : {non-fluent, real, default = 0.0};
+	mu_w : {non-fluent, real, default = 0.0};
+	sigma_w : {non-fluent, real, default = 0.0};
+	H : {non-fluent, real, default = 0.0};
+    };
+
+    cpfs {
+	t' = (t + 1.0);
+	vx'(?v) = (vx(?v) + (dt * ux(?v)));
+	vy'(?v) = (vy(?v) + (dt * uy(?v)));
+	x'(?v) = (x(?v) + (dt * vx(?v)));
+	y'(?v) = (y(?v) + (dt * vy(?v)));
+    };
+
+    reward = (-1.0 * ((((sum_{?v : vehicle} ((((x(?v) - gx) * (x(?v) - gx)) + ((y(?v) - gy) * (y(?v) - gy)))) + sum_{?v : vehicle} (if ((t < H)) then ((((ux(?v) * ux(?v)) * 0.01) + ((uy(?v) * uy(?v)) * 0.01))) else (0.0))) + sum_{?v : vehicle} (if ((sqrt[((vx(?v) * vx(?v)) + (vy(?v) * vy(?v)))] <= 5.0)) then ((5.0 - abs[sqrt[((vx(?v) * vx(?v)) + (vy(?v) * vy(?v)))]])) else (0.0))) + sum_{?v : vehicle} (if ((abs[x(?v)] <= 100.0)) then ((100.0 - abs[x(?v)])) else (0.0))) + sum_{?v : vehicle} (if ((abs[y(?v)] <= 100.0)) then ((100.0 - abs[y(?v)])) else (0.0))));
+
+    action-preconditions {
+	forall_{?v : vehicle} ((ux(?v) >= -1.0));
+	forall_{?v : vehicle} ((ux(?v) <= 1.0));
+	forall_{?v : vehicle} ((uy(?v) >= -1.0));
+	forall_{?v : vehicle} ((uy(?v) <= 1.0));
+    };
+
+    state-invariants {
+	forall_{?v : vehicle} ((sqrt[((vx(?v) * vx(?v)) + (vy(?v) * vy(?v)))] <= 5.0));
+	forall_{?v : vehicle} ((x(?v) >= -100.0));
+	forall_{?v : vehicle} ((x(?v) <= 100.0));
+	forall_{?v : vehicle} ((y(?v) >= -100.0));
+	forall_{?v : vehicle} ((y(?v) <= 100.0));
+    };
+
+}
+
+non-fluents instance_000001_non_fluents {
+    domain = lqr_nav_2d_multi_unit;
+
+    objects {
+	vehicle : {v002,v001};
+    };    
+
+    non-fluents {
+	mu_w = 0.0;
+	gx = 12;
+	gy = 12;
+	H = 100.0;
+	sigma_w = 0.05;
+	dt = 0.5;
+    };
+}
+
+instance instance_000001 {
+
+    domain = lqr_nav_2d_multi_unit;
+    non-fluents = instance_000001_non_fluents;
+
+    init-state {
+    t = 0.0;
+    ux(v002) = 0.0;
+	ux(v001) = 0.0;
+
+	uy(v002) = 0.0;
+	uy(v001) = 0.0;
+	
+	vx(v002) = -1.22;	
+	vx(v001) = -0.74;
+	
+	vy(v002) = -1.34;
+	vy(v001) = -1.11;
+	
+	x(v002) = 90;
+	x(v001) = 90;
+	y(v002) = 90;
+	y(v001) = 90;	
+    };
+
+    max-nondef-actions = pos-inf;
+    horizon = 100;
+    discount = 1.0;
+}

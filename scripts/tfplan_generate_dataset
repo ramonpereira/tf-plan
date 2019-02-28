@@ -18,7 +18,7 @@
 # -----------------------------------------------------------------
 #
 # Author: Ramon Fraga Pereira
-# This is a modified version of Thiago Bueno for generating a datasets to learn the dynamics of hybrid domains.
+# This is a modified version of Thiago Bueno's tf-plan for generating a datasets to learn the transition function of hybrid domains.
 #
 # -----------------------------------------------------------------
 
@@ -112,12 +112,12 @@ def optimize(compiler, args):
     return planning(compiler, args.batch_size, args.horizon, args.epochs, args.learning_rate)
 
 def offline_planning(compiler, batch_size, horizon, epochs, learning_rate):
-    # optimize actions
+    # Optimize actions
     planner = OfflineOpenLoopPlanner(compiler, batch_size, horizon)
     planner.build(learning_rate)
     actions, policy_variables = planner.run(epochs)
 
-    # evaluate solution
+    # Evaluate solution
     plan = OpenLoopPolicy(compiler, 1, horizon)
     plan.build('test', initializers=policy_variables)
     evaluator = ActionEvaluator(compiler, plan)
@@ -125,11 +125,11 @@ def offline_planning(compiler, batch_size, horizon, epochs, learning_rate):
     return trajectories
 
 def online_planning(compiler, batch_size, horizon, epochs, learning_rate):
-    # build online planner
+    # Build online planner
     open_loop_planner = OnlineOpenLoopPlanner(compiler, batch_size, horizon, parallel_plans=False)
     open_loop_planner.build(learning_rate, epochs)
 
-    # run plan-execute-monitor cycle and evaluate solution
+    # Run plan-execute-monitor cycle and evaluate solution
     planner = OnlinePlanning(compiler, open_loop_planner)
     planner.build()
     trajectories, stats = planner.run(horizon)
@@ -146,7 +146,7 @@ def display(compiler, trajectories, visualizer_type, verbose=True):
         viz = visualizer(compiler, verbose)
         viz.render(trajectories)
 
-def generate_dataset(list_trajectories, directory_name):
+def generate_dataset_1D(list_trajectories, directory_name):
     #
     # lqr_nav_1d and lqg_nav_1d
     # action: u, states: t, states: v, states: x
@@ -160,6 +160,10 @@ def generate_dataset(list_trajectories, directory_name):
     label_content.append(header_label_file)    
     
     for trajectories in list_trajectories:
+        # visualizer = tfrddlsim.viz.visualizers.get('generic', 'generic')
+        # viz = visualizer(compiler, True)
+        # viz.render(trajectories)
+        
         non_fluents, initial_state, states, actions, interms, rewards = trajectories
         
         current_state = ''
@@ -179,9 +183,69 @@ def generate_dataset(list_trajectories, directory_name):
 
             action_current_state = str(action) + (',' if index > 0 else '') + current_state
             data_content.append(action_current_state)
-            #print(action_current_state)
 
             next_state = str(t_states[index]) + ',' + str(v_states[index]) + ',' + str(x_states[index])
+            current_state = next_state
+            label_content.append(next_state)
+
+    data_file = open(str(directory_name) + '-data.txt', 'w')
+    for data in data_content:
+        data_file.write(data + '\n')
+
+    data_file.close()
+    
+    label_file = open(str(directory_name) + '-label.txt', 'w')
+    for label in label_content:
+        label_file.write(label + '\n')
+
+    label_file.close()
+
+def generate_dataset_2D(list_trajectories, directory_name):
+    #
+    # lqr_nav_2d
+    # action: ux, action: uy, states: t, states: vx, states: vy, states: x, states: y
+    # 
+    header_data_file = 'action: ux,action: uy,states: t,states: vx,states: vy,states: x,states: y'
+    header_label_file = 'states: t,states: vx,states: vy,states: x,states: y'
+
+    data_content = []
+    label_content = []
+    data_content.append(header_data_file)
+    label_content.append(header_label_file)    
+    
+    for trajectories in list_trajectories:
+        visualizer = tfrddlsim.viz.visualizers.get('generic', 'generic')
+        viz = visualizer(compiler, True)
+        viz.render(trajectories)
+
+        non_fluents, initial_state, states, actions, interms, rewards = trajectories
+        
+        current_state = ''
+        for s in initial_state:
+            current_state = current_state + ',' + str(float(s[0]))
+
+        states = [(s[0], s[1][0]) for s in states]
+
+        t_states = states[0][1]
+        vx_states = states[1][1]
+        vy_states = states[2][1]
+        x_states = states[3][1]
+        y_states = states[4][1]
+
+        steps = list(range(0, len(x_states)))
+
+        executed_actions_x = actions[0][1].tolist()
+        executed_actions_y = actions[1][1].tolist()
+
+        for index in steps:
+            action_x = executed_actions_x[0][index]
+            action_y = executed_actions_y[0][index]
+
+            action_current_state = str(float(action_x[0])) + ',' + str(float(action_y[0]))  + (',' if index > 0 else '') + current_state
+            data_content.append(action_current_state)
+            #print(action_current_state)
+
+            next_state = str(float(t_states[index][0])) + ',' + str(float(vx_states[index][0])) + ',' + str(float(vy_states[index][0])) + ',' + str(float(x_states[index][0])) + ',' + str(float(y_states[index][0]))
             current_state = next_state
             label_content.append(next_state)
             #print(next_state)
@@ -197,9 +261,9 @@ def generate_dataset(list_trajectories, directory_name):
     for label in label_content:
         label_file.write(label + '\n')
 
-    label_file.close()
+    label_file.close()    
 
-def generate_dataset_2D_multi_unit(list_trajectories, directory_name):
+def generate_dataset_2D_multi_units(list_trajectories, directory_name):
     #
     # lqg_2d_nav_multi_unit
     # action: ux_v002, action: ux_v001, action: uy_v002, action: uy_v001, states: t, states: vx_v002, states: vx_v001, states: vy_v002, states: vy_v001, states: x_v002, states: x_v001, states: y_v002, states: y_v001
@@ -220,13 +284,14 @@ def generate_dataset_2D_multi_unit(list_trajectories, directory_name):
         non_fluents, initial_state, states, actions, interms, rewards = trajectories
         
         current_state = ''
+        print(initial_state)
         for i in initial_state:
             s = i.tolist()[0]
-            if type(s) is float:
-                current_state = current_state + ',' + str(s)
-            else: current_state = current_state + ',' + str(s[0]) + ',' + str(s[1])
+            if len(s) == 1:
+                current_state = current_state + ',' + str(float(s[0]))
+            else:
+                current_state = current_state + ',' + str(s[0]) + ',' + str(s[1])
 
-        #print('Initial state: ' + str(current_state))
         states = [(s[0], s[1][0]) for s in states]
                     
         t_states = states[0][1]
@@ -237,11 +302,8 @@ def generate_dataset_2D_multi_unit(list_trajectories, directory_name):
         
         steps = list(range(0, args.horizon))
 
-        #print(actions)
         ux_actions = actions[0][1].tolist()
         uy_actions = actions[1][1].tolist()
-        #print('0: ' + str(ux_actions))
-        #print('1: ' + str(uy_actions))
 
         vx_states = vx_states.tolist()
         vy_states = vy_states.tolist()
@@ -264,13 +326,10 @@ def generate_dataset_2D_multi_unit(list_trajectories, directory_name):
 
             action_current_state = str(ux_v002) + ',' + str(ux_v001) + ',' + str(uy_v002) + ',' + str(uy_v001) + (',' if index > 0 else '') + current_state
             data_content.append(action_current_state)
-            #print(action_current_state)
 
-            next_state = str(t_states[index]) + ',' + str(vx_state[0]) + ',' + str(vx_state[1]) + ',' + str(vy_state[0]) + ',' + str(vy_state[1]) + ',' + str(x_state[0]) + ',' + str(x_state[1]) + ',' + str(y_state[0]) + ',' + str(y_state[1])
+            next_state = str(float(t_states[index])) + ',' + str(vx_state[0]) + ',' + str(vx_state[1]) + ',' + str(vy_state[0]) + ',' + str(vy_state[1]) + ',' + str(x_state[0]) + ',' + str(x_state[1]) + ',' + str(y_state[0]) + ',' + str(y_state[1])
             current_state = next_state
             label_content.append(next_state)
-            #print(next_state)
-            #print()
 
     data_file = open(str(directory_name) + '-data.txt', 'w')
     for data in data_content:
@@ -282,38 +341,36 @@ def generate_dataset_2D_multi_unit(list_trajectories, directory_name):
     for label in label_content:
         label_file.write(label + '\n')
 
-    label_file.close()    
+    label_file.close()
 
 if __name__ == '__main__':
-
-    # parse CLI arguments
+    # Parse CLI arguments
     args = parse_args()
 
-    # print planner parameters
+    # Print planner parameters
     print_parameters(args)
 
     list_trajectories = []
 
     domain_name = args.rddl.split('/')[3]
 
-    # read RDDL (problem instances) files in a directory and generate the trajectory for each instance in such directory.
+    # Read RDDL (problem instances) files in a directory and generate the trajectory for each instance in such directory.
     for filename in os.listdir(args.rddl):
         if ".rddl" in filename:
-            # compile RDDL file
+            # Compile RDDL file
             print('###> Planning for RDDL file: ' + str(filename))
             compiler = rddlgym.make(args.rddl + filename, mode=rddlgym.SCG)
             compiler.batch_mode_on()
 
-            # optimize actions
+            # Optimize actions
             trajectories = optimize(compiler, args)
 
-            # report performance
             print_performance(trajectories)
 
-            # render visualization    
-            # display(compiler, trajectories, args.viz, args.verbose)
             list_trajectories.append(trajectories)
 
-    if '2d' in domain_name:
-        generate_dataset_2D_multi_unit(list_trajectories, domain_name)
-    else: generate_dataset(list_trajectories, domain_name)
+    if '2d_multi_unit' in domain_name:
+        generate_dataset_2D_multi_units(list_trajectories, domain_name)
+    elif '2d' in domain_name:
+        generate_dataset_2D(list_trajectories, domain_name)
+    else: generate_dataset_1D(list_trajectories, domain_name)
