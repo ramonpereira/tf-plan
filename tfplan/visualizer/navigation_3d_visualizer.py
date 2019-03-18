@@ -79,7 +79,7 @@ class Navigation3DVisualizer(Visualizer):
         self._render_state_action_trajectory(start, path, deltas)
 
         plt.title('Navigation', fontweight='bold')
-        plt.legend(loc='lower right')
+        plt.legend(loc='upper right')
         plt.show()
 
     def _render_state_space(self):
@@ -90,8 +90,8 @@ class Navigation3DVisualizer(Visualizer):
         self.ax.grid()
 
     def _render_start_and_goal_positions(self, start, goal):
-        self.ax.scatter([start[0]], [start[1]], [start[2]], marker='^', color='limegreen', label='initial')
-        self.ax.scatter([goal[0]], [goal[1]], [goal[2]], marker='x', color='crimson', label='goal')
+        self.ax.scatter([start[0]], [start[1]], [start[2]], marker='^', color='limegreen', label='Initial State')
+        self.ax.scatter([goal[0]], [goal[1]], [goal[2]], marker='x', color='crimson', label='Goal')
 
     def _render_state_action_trajectory(self, start, path, deltas):
         xpath = [ p[0] for p in path ]

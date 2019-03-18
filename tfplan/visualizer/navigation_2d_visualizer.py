@@ -91,8 +91,8 @@ class Navigation2DVisualizer(Visualizer):
         self._ax1.grid()
 
     def _render_start_and_goal_positions(self, start, goal):
-        self._ax1.plot([start[0]], [start[1]], marker='^', markersize=15, color='limegreen', label='initial')
-        self._ax1.plot([goal[0]], [goal[1]], marker='x', markersize=15, color='crimson', label='goal')
+        self._ax1.plot([start[0]], [start[1]], marker='^', markersize=15, color='limegreen', label='Initial State')
+        self._ax1.plot([goal[0]], [goal[1]], marker='x', markersize=15, color='crimson', label='Goal State')
 
     def _render_state_action_trajectory(self, start, path, deltas):
         xpath = [ p[0] for p in path ]
