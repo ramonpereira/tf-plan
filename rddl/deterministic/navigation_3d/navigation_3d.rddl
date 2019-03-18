@@ -67,9 +67,9 @@ non-fluents Navigation_non {
 		dim: {x,y,z};
 	};
 	non-fluents {
-		GOAL(x) = 1.5;
-        GOAL(y) = 3.0;
-        GOAL(z) = 1.0;
+		GOAL(x) = 0.5;
+        GOAL(y) = 3.1;
+        GOAL(z) = 4.6;
 	};
 }
 
@@ -77,11 +77,11 @@ instance is1{
 	domain = Navigation_Problem;
 	non-fluents = Navigation_non;
 	init-state{
-		location(x) = -2.4;
-		location(y) = -1.3;
-		location(z) = 0.0;
+		location(x) = 3.4;
+		location(y) = 0.7;
+		location(z) = -2.3;
 	};
-	max-nondef-actions = 2;
+	max-nondef-actions = 3;
 	horizon = 10;
 	discount = 1.0;
 }

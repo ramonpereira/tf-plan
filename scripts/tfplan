@@ -45,13 +45,14 @@ from tfplan.planners.offline import OfflineOpenLoopPlanner
 from tfplan.train.policy import OpenLoopPolicy
 from tfplan.test.evaluator import ActionEvaluator
 from tfplan.visualizer.car_parking_visualizer import CarParkingVisualizer
-from tfplan.visualizer.lqg_visualizer import LQGVisualizer
 from tfplan.visualizer.lqr_visualizer import LQRVisualizer
 from tfplan.visualizer.lqr_2d_visualizer import LQR2DVisualizer
-from tfplan.visualizer.lqg_2d_multi_unit_visualizer import LQGMultiUnit2DVisualizer
+from tfplan.visualizer.navigation_2d_visualizer import Navigation2DVisualizer
+from tfplan.visualizer.navigation_3d_visualizer import Navigation3DVisualizer
+from tfplan.visualizer.navigation_deceleration_visualizer import NavigationDecelerationVisualizer
 
 def parse_args():
-    new_visualizers = tuple(tfrddlsim.viz.visualizers) + ('car_parking', 'navigation_3d', 'lqr_1d_nav', 'lqr_2d_nav' , 'lqr_2d_multi_unit',)
+    new_visualizers = tuple(tfrddlsim.viz.visualizers) + ('car_parking', 'navigation_2d', 'navigation_3d', 'navigation_deceleration', 'lqr_1d_nav', 'lqr_2d_nav' , 'lqr_2d_multi_unit',)
     
     description = '''
     tf-plan (v{}): Planning via gradient-based optimization in TensorFlow.
@@ -263,10 +264,19 @@ def display(compiler, trajectories, visualizer_type, verbose=True):
             viz.render(trajectories)
             non_fluents, initial_state, states, actions, interms, rewards = trajectories
 
-        if visualizer_type == 'navigation':
-            visualizer = tfrddlsim.viz.visualizers.get(visualizer_type, 'generic')
-            viz = visualizer(compiler, verbose)
-            viz.render(trajectories)
+        if visualizer_type == 'navigation_deceleration':
+            visualizer = NavigationDecelerationVisualizer(compiler, verbose)
+            visualizer.render(trajectories)
+            non_fluents, initial_state, states, actions, interms, rewards = trajectories
+
+        if visualizer_type == 'navigation_2d':
+            visualizer = Navigation2DVisualizer(compiler, verbose)
+            visualizer.render(trajectories)
+            non_fluents, initial_state, states, actions, interms, rewards = trajectories
+
+        if visualizer_type == 'navigation_3d':
+            visualizer = Navigation3DVisualizer(compiler, verbose)
+            visualizer.render(trajectories)
             non_fluents, initial_state, states, actions, interms, rewards = trajectories            
 
 if __name__ == '__main__':

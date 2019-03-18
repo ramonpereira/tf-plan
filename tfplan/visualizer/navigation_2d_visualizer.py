@@ -26,12 +26,11 @@ NonFluents = Sequence[Tuple[str, Value]]
 Fluents = Sequence[Tuple[str, np.array]]
 
 
-class NavigationVisualizer(Visualizer):
-    '''Visualizer for the Navigation domain.
+class Navigation2DVisualizer(Visualizer):
+    '''Visualizer for the Navigation domain (adapted from Thiago Bueno).
 
     It uses Matplotlib.pyplot to render a graphical representation
-    of the navigation paths, the initial and goal positions, and
-    the deceleration zones.
+    of the navigation paths, and the initial and goal positions.
 
     Args:
         compiler (:obj:`rddl2tf.compiler.Compiler`): RDDL2TensorFlow compiler
@@ -71,25 +70,11 @@ class NavigationVisualizer(Visualizer):
         centers = None
         decays = None
         zones = None
-        
-        if 'DECELERATION_ZONE_CENTER/2' in non_fluents.keys():
-           centers = non_fluents['DECELERATION_ZONE_CENTER/2']
-           center_is_defined = True
-
-        if 'DECELERATION_ZONE_DECAY/1' in non_fluents.keys():
-           decays = non_fluents['DECELERATION_ZONE_DECAY/1']
-           decay_is_defined = True
-
-        if center_is_defined and decay_is_defined:
-           zones = [(x, y, d) for (x, y), d in zip(centers, decays)]
 
         self._ax1 = plt.gca()
 
         self._render_state_space()
         self._render_start_and_goal_positions(start, g)
-        
-        if zones is not None:
-           self._render_deceleration_zones(zones)
         
         self._render_state_action_trajectory(start, path, deltas)
 
@@ -106,27 +91,10 @@ class NavigationVisualizer(Visualizer):
         self._ax1.grid()
 
     def _render_start_and_goal_positions(self, start, goal):
-        self._ax1.plot([start[0]], [start[1]], marker='X', markersize=15, color='limegreen', label='initial')
-        self._ax1.plot([goal[0]], [goal[1]], marker='X', markersize=15, color='crimson', label='goal')
-
-    def _render_deceleration_zones(self, zones, npoints=1000):
-        lower, upper = (-5.0, -5.0), (10.0, 10.0)
-        X, Y = np.meshgrid(np.linspace(lower[0], upper[0], npoints), np.linspace(lower[1], upper[1], npoints))
-        Lambda = 1.0
-        for xcenter, ycenter, decay in zones:
-            D = np.sqrt((X - xcenter) ** 2 + (Y - ycenter) ** 2)
-            Lambda *= 2 / (1 + np.exp(- decay * D)) - 1.00
-        ticks = np.arange(0.0, 1.01, 0.10)
-        cp = self._ax1.contourf(X, Y, Lambda, ticks, cmap=plt.cm.bone)
-        plt.colorbar(cp, ticks=ticks)
-        cp = self._ax1.contour(X, Y, Lambda, ticks, colors="black", linestyles="dashed")
+        self._ax1.plot([start[0]], [start[1]], marker='^', markersize=15, color='limegreen', label='initial')
+        self._ax1.plot([goal[0]], [goal[1]], marker='x', markersize=15, color='crimson', label='goal')
 
     def _render_state_action_trajectory(self, start, path, deltas):
-        print('Deltas:')
-        print(deltas)
-
-        print('Path:')
-        print(path)
         xpath = [ p[0] for p in path ]
         ypath = [ p[1] for p in path ]
         self._ax1.plot(xpath, ypath, 'b.', label='states')
