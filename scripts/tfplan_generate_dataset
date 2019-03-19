@@ -343,6 +343,75 @@ def generate_dataset_2D_multi_units(list_trajectories, directory_name):
 
     label_file.close()
 
+def generate_dataset_navigation_3D(list_trajectories, directory_name):
+    #
+    # navigation_3d
+    # action: move(x), action: move(y), action: move(z), states: x, states: y, states: z
+    # 
+    header_data_file = 'action: move(x), action: move(y), action: move(z), states: location(x), states: location(y), states: location(z)'
+    header_label_file = 'states: location(x), states: location(y), states: location(z)'
+
+    data_content = []
+    label_content = []
+    data_content.append(header_data_file)
+    label_content.append(header_label_file)    
+    
+    for trajectories in list_trajectories:
+        visualizer = tfrddlsim.viz.visualizers.get('generic', 'generic')
+        viz = visualizer(compiler, True)
+        viz.render(trajectories)
+
+        non_fluents, initial_state, states, actions, interms, rewards = trajectories
+        
+        current_state = ''
+        print(initial_state)
+        for i in initial_state:
+            s = i.tolist()[0]
+            if len(s) == 1:
+                current_state = current_state + ',' + str(float(s[0]))
+            else:
+                current_state = current_state + ',' + str(s[0]) + ',' + str(s[1]) + ',' + str(s[2])
+
+        states = [(s[0], s[1][0]) for s in states]
+
+        location_states = states[0][1]
+
+        x_states = [(l[0]) for l in location_states]
+        y_states = [(l[1]) for l in location_states]
+        z_states = [(l[2]) for l in location_states]
+
+        steps = list(range(0, len(x_states)))
+
+        actions = [(s[0], s[1][0]) for s in actions]
+        executed_actions = actions[0][1]
+        
+        x_actions = [(a[0]) for a in executed_actions]
+        y_actions = [(a[1]) for a in executed_actions]
+        z_actions = [(a[2]) for a in executed_actions]
+
+        for index in steps:
+            action_current_state = str(float(x_actions[index])) + ',' + str(float(y_actions[index])) + ',' + str(float(z_actions[index]))  + (',' if index > 0 else '') + current_state
+            data_content.append(action_current_state)
+            #print(action_current_state)
+
+            next_state = str(float(x_states[index])) + ',' + str(float(y_states[index])) + ',' + str(float(z_states[index]))
+            current_state = next_state
+            label_content.append(next_state)
+            #print(next_state)
+            #print()
+
+    data_file = open(str(directory_name) + '-data.txt', 'w')
+    for data in data_content:
+        data_file.write(data + '\n')
+
+    data_file.close()
+    
+    label_file = open(str(directory_name) + '-label.txt', 'w')
+    for label in label_content:
+        label_file.write(label + '\n')
+
+    label_file.close()
+
 if __name__ == '__main__':
     # Parse CLI arguments
     args = parse_args()
@@ -369,8 +438,11 @@ if __name__ == '__main__':
 
             list_trajectories.append(trajectories)
 
-    if '2d_multi_unit' in domain_name:
+    if '3d' in domain_name:
+        generate_dataset_navigation_3D(list_trajectories, domain_name)
+    elif '2d_multi_unit' in domain_name:
         generate_dataset_2D_multi_units(list_trajectories, domain_name)
     elif '2d' in domain_name:
         generate_dataset_2D(list_trajectories, domain_name)
-    else: generate_dataset_1D(list_trajectories, domain_name)
+    else: 
+        generate_dataset_1D(list_trajectories, domain_name)
