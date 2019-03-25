@@ -197,7 +197,7 @@ def display(compiler, trajectories, visualizer_type, verbose=True):
             visualizer.render(step_states, t_states, vx_states, vy_states, x_states, y_states)
 
             data = np.column_stack((vx_states, vy_states, x_states, y_states))
-            np.savetxt('LQR_2D_Navigation-trajectory.csv', data, delimiter=',')            
+            np.savetxt('LQR_2D_Navigation-trajectory.csv', data, delimiter=',')
 
         if visualizer_type == 'lqr_2d_multi_unit':
             non_fluents, initial_state, states, actions, interms, rewards = trajectories
@@ -277,7 +277,17 @@ def display(compiler, trajectories, visualizer_type, verbose=True):
         if visualizer_type == 'navigation_3d':
             visualizer = Navigation3DVisualizer(compiler, verbose)
             visualizer.render(trajectories)
-            non_fluents, initial_state, states, actions, interms, rewards = trajectories            
+            non_fluents, initial_state, states, actions, interms, rewards = trajectories
+            states = [(s[0], s[1][0]) for s in states]
+
+            location_states = states[0][1]
+
+            x_states = [(l[0]) for l in location_states]
+            y_states = [(l[1]) for l in location_states]
+            z_states = [(l[2]) for l in location_states]
+            
+            data = np.column_stack((x_states, y_states, z_states))
+            np.savetxt('LQR_3D_Navigation-trajectory.csv', data, delimiter=',')            
 
 if __name__ == '__main__':
 
