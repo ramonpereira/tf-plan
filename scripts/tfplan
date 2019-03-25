@@ -47,6 +47,7 @@ from tfplan.test.evaluator import ActionEvaluator
 from tfplan.visualizer.car_parking_visualizer import CarParkingVisualizer
 from tfplan.visualizer.lqr_visualizer import LQRVisualizer
 from tfplan.visualizer.lqr_2d_visualizer import LQR2DVisualizer
+from tfplan.visualizer.lqr_2d_multiunit_visualizer import LQRMultiUnit2DVisualizer
 from tfplan.visualizer.navigation_2d_visualizer import Navigation2DVisualizer
 from tfplan.visualizer.navigation_3d_visualizer import Navigation3DVisualizer
 from tfplan.visualizer.navigation_deceleration_visualizer import NavigationDecelerationVisualizer
@@ -159,6 +160,7 @@ def display(compiler, trajectories, visualizer_type, verbose=True):
         if visualizer_type == 'lqr_1d_nav':
             non_fluents, initial_state, states, actions, interms, rewards = trajectories
             states = [(s[0], s[1][0]) for s in states]
+            actions = [(a[0], a[1][0]) for a in actions]
             
             t_states = states[0][1]
             v_states = states[1][1]
@@ -170,12 +172,15 @@ def display(compiler, trajectories, visualizer_type, verbose=True):
             visualizer.render(step_states, t_states, v_states, x_states)
 
             data = np.column_stack((v_states, x_states))
+            data_actions = actions[0][1]
 
             np.savetxt('LQR_1D_Navigation-trajectory.csv', data, delimiter=',')
+            np.savetxt('LQR_1D_Navigation-actions.csv', data_actions, delimiter=',')
 
         if visualizer_type == 'lqr_2d_nav':
             non_fluents, initial_state, states, actions, interms, rewards = trajectories
             states = [(s[0], s[1][0]) for s in states]
+            actions = [(a[0], a[1][0]) for a in actions]
             
             t_states = states[0][1]
             vx_states = states[1][1]
@@ -196,8 +201,13 @@ def display(compiler, trajectories, visualizer_type, verbose=True):
             visualizer = LQR2DVisualizer()
             visualizer.render(step_states, t_states, vx_states, vy_states, x_states, y_states)
 
+            actions_x = actions[0][1]
+            actions_y = actions[1][1]
+
             data = np.column_stack((vx_states, vy_states, x_states, y_states))
+            data_actions = np.column_stack((actions_x, actions_y))
             np.savetxt('LQR_2D_Navigation-trajectory.csv', data, delimiter=',')
+            np.savetxt('LQR_2D_Navigation-actions.csv', data_actions, delimiter=',')
 
         if visualizer_type == 'lqr_2d_multi_unit':
             non_fluents, initial_state, states, actions, interms, rewards = trajectories
@@ -252,11 +262,19 @@ def display(compiler, trajectories, visualizer_type, verbose=True):
 
             step_states = list(range(0, len(x_states)))
 
-            visualizer = LQGMultiUnit2DVisualizer()
+            visualizer = LQRMultiUnit2DVisualizer()
             visualizer.render(step_states, t_states, vx_states_unit1, vx_states_unit2, vy_states_unit1, vy_states_unit2, x_states_unit1, x_states_unit2, y_states_unit1, y_states_unit2)
+
+            actions_x = actions[0][1]
+            actions_y = actions[1][1]
+            x_actions = actions_x[0]
+            y_actions = actions_y[0]
             
             data = np.column_stack((vx_states_unit2, vx_states_unit1, vy_states_unit2, vy_states_unit1, x_states_unit2, y_states_unit2, x_states_unit1, y_states_unit1))
+            data_actions = np.column_stack((x_actions, y_actions))
+            
             np.savetxt('LQR_2D_Navigation_Multi_Unit-trajectory.csv', data, delimiter=',')
+            np.savetxt('LQR_2D_Navigation_Multi_Unit-actions.csv', data_actions, delimiter=',')
 
         if visualizer_type == 'generic':
             visualizer = tfrddlsim.viz.visualizers.get(visualizer_type, 'generic')
